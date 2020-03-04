@@ -1,0 +1,59 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel InitSeed
+#pragma kernel FillColor
+#pragma kernel JFA
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+StructuredBuffer<int2> Seeds;
+StructuredBuffer<float3> Colors;
+int Width;
+int Height;
+RWTexture2D<float4> Source;
+RWTexture2D<float4> Result;
+int step;
+
+[numthreads(1,1,1)]
+void InitSeed (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int2 seedPos = Seeds[id.x];
+	Source[seedPos] = float4(uint(seedPos.x)%Width,uint(seedPos.y)%Height,id.x + 1,0);
+}
+
+[numthreads(1,1,1)]
+void JFA (uint3 id : SV_DispatchThreadID)
+{
+	float minDistance = 99999;
+	float minDistanceID = 0;
+	float minX = 0;
+	float minY = 0;
+	float3 cur = Source[id.xy];
+    for(int i=-1;i<=1;i++){
+		for(int j=-1;j<=1;j++){
+			int x = id.x + i*step;
+			int y = id.y + j*step;
+			if(x >=0 && x<Width && y>=0&&y<Height){
+				float3 t = Source[uint2(x,y)];
+				if(t.z > 0 ){
+					float distance = (id.xy - t.xy)*(id.xy - t.xy);
+					if(distance < minDistance){
+						minDistance = distance;
+						minDistanceID = t.z;
+						minX = t.x;
+						minY = t.y;
+					}
+				}
+			}
+		}
+	}
+	Result[id.xy] = float4(minX,minY,minDistanceID,0);
+}
+
+[numthreads(1,1,1)]
+void FillColor (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int seedID = Source[id.xy].z;
+	Result[id.xy] = float4(Colors[max(seedID-1,0)],1);
+}
