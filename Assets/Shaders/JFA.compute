@@ -77,6 +77,6 @@ void FillDistanceTransform (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
 	float4 info = Source[id.xy];
-	float intensity =  exp(-sqrt(info.w)*0.01);
+	float intensity =  1-exp(-sqrt(info.w)*0.01);
 	Result[id.xy] = float4(intensity,intensity,intensity,1);
 }
