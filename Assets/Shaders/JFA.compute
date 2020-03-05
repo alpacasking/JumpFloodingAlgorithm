@@ -1,6 +1,7 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel InitSeed
-#pragma kernel FillColor
+#pragma kernel FillVoronoiDiagram
+#pragma kernel FillDistanceTransform
 #pragma kernel JFA
 
 // Create a RenderTexture with enableRandomWrite flag and set it
@@ -11,49 +12,71 @@ int Width;
 int Height;
 RWTexture2D<float4> Source;
 RWTexture2D<float4> Result;
-int step;
+int Step;
+
+uint2 BoundIndex(uint2 i){
+	return uint2(clamp(i.x,0,Width),clamp(i.y,0,Height));
+}
+
+void GetMinDistancePoint(float2 curPos,float3 tarInfo,inout float4 minInfo)
+{
+	// z channel is seed ID
+	if(tarInfo.z > 0 ){
+		float distance = dot(curPos - tarInfo.xy,curPos - tarInfo.xy);
+		if(distance < minInfo.w){
+			minInfo = float4( tarInfo, distance);
+		}
+	}
+}
 
 [numthreads(1,1,1)]
 void InitSeed (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
 	int2 seedPos = Seeds[id.x];
-	Source[seedPos] = float4(uint(seedPos.x)%Width,uint(seedPos.y)%Height,id.x + 1,0);
+	uint px = uint(seedPos.x)%Width;
+	uint py = uint(seedPos.y)%Height;
+	Source[uint2(px,py)] = float4(px,py,id.x+1,1);
 }
 
-[numthreads(1,1,1)]
+
+
+[numthreads(8,8,1)]
 void JFA (uint3 id : SV_DispatchThreadID)
 {
-	float minDistance = 99999;
-	float minDistanceID = 0;
-	float minX = 0;
-	float minY = 0;
-	float3 cur = Source[id.xy];
-    for(int i=-1;i<=1;i++){
-		for(int j=-1;j<=1;j++){
-			int x = id.x + i*step;
-			int y = id.y + j*step;
-			if(x >=0 && x<Width && y>=0&&y<Height){
-				float3 t = Source[uint2(x,y)];
-				if(t.z > 0 ){
-					float distance = (id.xy - t.xy)*(id.xy - t.xy);
-					if(distance < minDistance){
-						minDistance = distance;
-						minDistanceID = t.z;
-						minX = t.x;
-						minY = t.y;
-					}
-				}
-			}
-		}
-	}
-	Result[id.xy] = float4(minX,minY,minDistanceID,0);
+	// seed position,seed ID and distance with seed
+	float4 minInfo = float4(0,0,0,999999);
+	GetMinDistancePoint(id.xy,Source[id.xy].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(-Step,-Step))].xyz,minInfo);
+    GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(-Step,Step))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(-Step,0))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(0,-Step))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(0,Step))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(Step,-Step))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(Step,0))].xyz,minInfo);
+	GetMinDistancePoint(id.xy,Source[BoundIndex(id.xy + uint2(Step,Step))].xyz,minInfo);
+	Result[id.xy] = minInfo;
 }
 
-[numthreads(1,1,1)]
-void FillColor (uint3 id : SV_DispatchThreadID)
+[numthreads(8,8,1)]
+void FillVoronoiDiagram (uint3 id : SV_DispatchThreadID)
 {
     // TODO: insert actual code here!
-	int seedID = Source[id.xy].z;
-	Result[id.xy] = float4(Colors[max(seedID-1,0)],1);
+	float4 info = Source[id.xy];
+	if(info.w < 10){
+		Result[id.xy] = float4(1,0,0,1);
+	}
+	else{
+		uint seedID = info.z;
+		Result[id.xy] = float4(Colors[max(seedID-1,0)],1);
+	}
+}
+
+[numthreads(8,8,1)]
+void FillDistanceTransform (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	float4 info = Source[id.xy];
+	float intensity =  exp(-sqrt(info.w)*0.01);
+	Result[id.xy] = float4(intensity,intensity,intensity,1);
 }

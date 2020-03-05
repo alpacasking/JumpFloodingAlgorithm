@@ -38,13 +38,13 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 705507994}
-  m_IndirectSpecularColor: {r: 0.44657874, g: 0.49641258, b: 0.5748172, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 11
-  m_GIWorkflowMode: 0
+  m_GIWorkflowMode: 1
   m_GISettings:
     serializedVersion: 2
     m_BounceScale: 1
@@ -307,5 +307,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a08f686f97305f4891a70e781ac2438, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SeedAmount: 5
+  SeedAmount: 100
+  Speed: 100
   JFAShader: {fileID: 7200000, guid: a0ed33c5e7c7a74459a43b926a295b71, type: 3}
+  DisplayType: 1
