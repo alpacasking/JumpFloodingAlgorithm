@@ -1,4 +1,4 @@
-# Jump Flooding Algorithm
+# Jump Flooding Algorithm For GPU
 Jump Flooding Algorithm for Voronoi Diagram and Distance Transform , with compute shader in Unity
 
 ![VoronoiDiagram](https://github.com/alpacasking/JumpFloodingAlgorithm/blob/master/VoronoiDiagram.png "Voronoi Diagram")
